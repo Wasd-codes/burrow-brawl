@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap');
 
 :root {
@@ -549,3 +550,17 @@ body.reduced-motion *, body.reduced-motion *::before { animation: none !importan
 /* head portraits in character select */
 .portrait .p-head { width: 100%; margin: -6px 0 -4px; aspect-ratio: 1; object-fit: contain; image-rendering: auto; filter: drop-shadow(0 2px 0 #000); pointer-events: none; }
 .portrait.locked .p-head { filter: grayscale(1) brightness(.35) drop-shadow(0 2px 0 #000); }
+
+/* Old-school bitmap feel for menus: chunky pixel type, hard black drop shadow */
+.screen, .modal {
+  --font: 'Pixelify Sans', 'VT323', monospace;
+  --font-title: 'Pixelify Sans', 'VT323', monospace;
+  font-size: calc(17px * var(--text-scale));
+  -webkit-font-smoothing: none; font-smooth: never;
+}
+.screen .title-text, .screen h2, .modal h2, .screen .panel-head, .screen .cs-nameplate .np-name, .screen .cs-dname, .screen .ped-label { font-weight: 700; letter-spacing: .5px; text-shadow: 2px 2px 0 #000; }
+.screen .osrs-btn { font-family: var(--font); font-weight: 600; font-size: calc(19px * var(--text-scale)); text-shadow: 2px 2px 0 #000; }
+.screen .panel-head { font-size: calc(18px * var(--text-scale)); }
+.screen .portrait .p-name { font-family: var(--font); font-size: calc(13px * var(--text-scale)); font-weight: 600; text-shadow: 1px 1px 0 #000; }
+.screen .cs-nameplate .np-name { font-size: calc(19px * var(--text-scale)); }
+.screen .cs-dname { font-size: calc(19px * var(--text-scale)); }

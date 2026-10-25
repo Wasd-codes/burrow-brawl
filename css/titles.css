@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik+Mono+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@600;700&display=swap');
 
 .bb-title-font { font-family: 'Press Start 2P', 'Courier New', monospace; }
 .bb-hidden { display: none !important; }
@@ -6,7 +6,7 @@
 /* ---- Logo ---- */
 .bb-logo-wrap { width: min(440px, 90%); margin: 0 auto 6px; }
 .bb-logo { width: 100%; height: auto; display: block; overflow: visible; }
-.bb-logo-letter { font-family: 'Rubik Mono One', 'Arial Black', sans-serif; }
+.bb-logo-letter { font-family: 'Pixelify Sans', 'Press Start 2P', monospace; font-weight: 700; }
 #game-logo .bb-logo-wrap { width: 100%; }
 #game-logo .bb-logo { filter: drop-shadow(2px 3px 0 rgba(0,0,0,.85)); }
 #game-logo .bb-logo path[stroke='#6b5d4c'] { stroke: #2a2018; }
@@ -19,7 +19,7 @@
   transition: opacity .6s ease;
 }
 .bb-splash-logo { width: min(560px, 80vw); animation: bbRise 1.2s cubic-bezier(.2,.8,.3,1) .1s both; }
-.bb-continue { color: #b3a28c; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; animation: bbFadeIn .8s ease 1.2s both, bbBlink 2s ease-in-out 2s infinite; }
+.bb-continue { font-family: 'Pixelify Sans', monospace; font-weight: 600; color: #ffff00; text-shadow: 2px 2px 0 #000; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; animation: bbFadeIn .8s ease 1.2s both, bbBlink 2s ease-in-out 2s infinite; }
 .bb-splash.bb-out { opacity: 0; pointer-events: none; }
 .bb-reduced, .bb-reduced * { animation: none !important; transition: none !important; }
 
