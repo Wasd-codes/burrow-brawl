@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Burrow Brawl</title>
+  <link rel="stylesheet" href="css/osrs.css">
+  <link rel="stylesheet" href="css/titles.css">
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+    #game { position: fixed; inset: 0; overflow: hidden; }
+    #game canvas { display: block; width: 100% !important; height: 100% !important; }
+    #ui { position: fixed; inset: 0; pointer-events: none; }
+  </style>
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="ui"></div>
+  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/titlecard.js"></script>
+</body>
+</html>

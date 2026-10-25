@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik+Mono+One&display=swap');
+
+.bb-title-font { font-family: 'Press Start 2P', 'Courier New', monospace; }
+.bb-hidden { display: none !important; }
+
+/* ---- Logo ---- */
+.bb-logo-wrap { width: min(440px, 90%); margin: 0 auto 6px; }
+.bb-logo { width: 100%; height: auto; display: block; overflow: visible; }
+.bb-logo-letter { font-family: 'Rubik Mono One', 'Arial Black', sans-serif; }
+#game-logo .bb-logo-wrap { width: 100%; }
+
+/* ---- Splash ---- */
+.bb-splash {
+  position: fixed; inset: 0; z-index: 9999; cursor: pointer; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vh;
+  background: #1c120a; transition: opacity .7s ease;
+}
+.bb-strata { position: absolute; inset: 0; background:
+  linear-gradient(180deg, #3b2a18 0 9%, #2a1c0f 9% 10%, #4a3320 10% 24%, #2e2013 24% 25.5%, #3a2a1c 25.5% 41%,
+    #241911 41% 42.5%, #33261b 42.5% 60%, #1f1610 60% 61.5%, #2a2018 61.5% 80%, #17110c 80% 81.5%, #1f1712 81.5% 100%); }
+.bb-under { position: absolute; inset: -20px; width: calc(100% + 40px); height: calc(100% + 40px); transition: transform .4s ease-out; }
+.bb-gem { animation: bbGlow 3.5s ease-in-out infinite; }
+.bb-motes { position: absolute; inset: 0; pointer-events: none; }
+.bb-motes i { position: absolute; width: var(--s); height: var(--s); border-radius: 50%; background: #e8c88a; opacity: 0; animation: bbMote linear infinite; }
+.bb-noise { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .3; mix-blend-mode: overlay; pointer-events: none; }
+.bb-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 42%, rgba(255,170,60,.12) 0%, transparent 40%, rgba(0,0,0,.85) 100%); }
+.bb-splash-logo { position: relative; width: min(660px, 86vw); animation: bbRise 1.8s cubic-bezier(.2,.8,.3,1) .2s both; transition: translate .4s ease-out; }
+.bb-continue { position: relative; color: #ffb52e; font-size: 14px; letter-spacing: 1px; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000; animation: bbFadeIn 1s ease 1.8s both, bbBlink 1.4s steps(2) 2.8s infinite; }
+.bb-splash.bb-out { opacity: 0; pointer-events: none; }
+.bb-reduced, .bb-reduced * { animation: none !important; transition: none !important; }
+
+@keyframes bbRise { from { opacity: 0; transform: translateY(40px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes bbGlow { 50% { opacity: .45; } }
+@keyframes bbMote { 0% { opacity: 0; transform: translate(0,0); } 20% { opacity: .7; } 80% { opacity: .5; } 100% { opacity: 0; transform: translate(40px,-120px); } }
+@keyframes bbFadeIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes bbBlink { 50% { opacity: .35; } }
+
+/* ---- Area banner ---- */
+.bb-banner {
+  position: fixed; left: 0; right: 0; top: 18vh; z-index: 900; pointer-events: none;
+  text-align: center; opacity: 0; transform: translateY(-8px);
+  transition: opacity .7s ease, transform .7s ease;
+  --bb-c: #ffff00;
+}
+.bb-banner.bb-in { opacity: 1; transform: none; }
+.bb-banner-title, .bb-banner-sub {
+  color: var(--bb-c); text-transform: uppercase; letter-spacing: 2px;
+  -webkit-text-stroke: 0; paint-order: stroke fill;
+}
+.bb-banner-title {
+  font-size: clamp(28px, 6vw, 72px); line-height: 1.1; white-space: nowrap;
+  text-shadow:
+    -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 4px 4px 0 #000,
+    0 -4px 0 #000, 0 4px 0 #000, -4px 0 0 #000, 4px 0 0 #000,
+    7px 8px 0 rgba(0,0,0,.65);
+}
+.bb-banner-sub {
+  margin-top: 14px; font-size: clamp(10px, 1.6vw, 20px);
+  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 4px 4px 0 rgba(0,0,0,.6);
+}
+.bb-banner.bb-boss { --bb-c: #ff3b2f; }
+.bb-banner.bb-boss .bb-banner-sub { color: #ffb0a0; }
