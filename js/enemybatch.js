@@ -107,7 +107,7 @@ export class EnemyBatcher {
     this.root.add(im); this.bars = im; this.barCap = cap;
   }
   // enemies: game enemy list; non-boss enemies with e.tpl are drawn. camera for frustum culling + bar billboarding.
-  update(enemies, camera, showBars) {
+  update(enemies, camera, showBars, pickups = null, time = 0) {
     camera.updateMatrixWorld();
     _pv.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); _frustum.setFromProjectionMatrix(_pv);
     for (const t of this.active) t.count = 0;
@@ -138,6 +138,20 @@ export class EnemyBatcher {
       if (e.freeze > 0) _c.setRGB(0.6 * f, 0.85 * f, 1.4 * f); else _c.setRGB(f, f, f);
       for (const im of t.meshes) { im.setMatrixAt(k, _m); im.setColorAt(k, _c); }
       if (e.showBar) needBars++;
+    }
+    // pickups (xp gems / gold): spin + bob in the instance matrix
+    if (pickups) {
+      _c.setRGB(1, 1, 1);
+      for (let i = 0; i < pickups.length; i++) {
+        const q = pickups[i], t = q.tpl; if (!t) continue;
+        const o = q.mesh; if (!o.visible) continue;
+        _sph.center.set(o.position.x, 0.3, o.position.z); _sph.radius = t.radius; if (!_frustum.intersectsSphere(_sph)) continue;
+        if (!this.active.has(t)) this.active.add(t);
+        if (t.count >= t.cap || !t.meshes) this._ensure(t, t.count + 1);
+        _p.set(o.position.x, o.position.y + Math.sin(time * 4) * 0.06, o.position.z);
+        _e.set(0, time * 3, 0, 'YXZ'); _q.setFromEuler(_e); _s.set(1, 1, 1); _m.compose(_p, _q, _s);
+        const k = t.count++; for (const im of t.meshes) { im.setMatrixAt(k, _m); im.setColorAt(k, _c); }
+      }
     }
     for (const t of this.active) if (t.meshes) for (const im of t.meshes) {
       im.count = t.count;

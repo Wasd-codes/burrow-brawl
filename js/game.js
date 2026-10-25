@@ -4,6 +4,7 @@ import * as D from './data.js';
 import * as M from './models.js';
 import { Settings } from './settings.js';
 import { Audio } from './audio.js';
+import { EnemyBatcher, getTemplate } from './enemybatch.js';
 
 const S = (k, d) => { try { const v = Settings?.get?.(k); return v == null ? d : v; } catch { return d; } };
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -130,6 +131,7 @@ export class Game {
     this.sun.shadow.mapSize.set(1024, 1024);
     const sc = this.sun.shadow.camera; sc.left = -30; sc.right = 30; sc.top = 30; sc.bottom = -30; sc.near = 1; sc.far = 120;
     this.scene.add(this.hemi, this.sun, this.sun.target);
+    this.enemyBatch = new EnemyBatcher(this.scene); // instanced enemy rendering (one draw call per enemy type)
 
     this._makeOverlay();
     this.applySettings();
@@ -402,6 +404,7 @@ export class Game {
       this._clearColliders(g.position.x, g.position.z, 3);
     }
     for (let i = 0; i < 3; i++) this.spawnRune(null, rand(15, 50));
+    this._warmEnemies(stage);
     this.ui?.log?.(`Welcome to ${stage.name}. Survive ${Math.round((stage.bossTime || 300) / 60)} minutes to face the boss!`, '#ffff00');
     import('./titlecard.js').then((m) => m.showStageBanner?.(stageIndex)).catch(() => {});
     Audio.startMusic(stageIndex);
@@ -1057,14 +1060,21 @@ export class Game {
   }
   _getEnemyMesh(key, def) {
     const pool = this.pools[key] || (this.pools[key] = []);
+    // enemies render through EnemyBatcher; e.mesh is a lightweight transform proxy (not in the scene graph)
     let m = pool.pop();
-    if (!m) {
-      m = safeBuild(() => M.buildEnemy(def.model, def.color, def.size), () => blob(def.color || 0xff00ff, def.size || 1));
-      if (S('quality', 'medium') === 'high') m.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-      this.world.add(m);
-    }
+    if (!m) m = new THREE.Object3D();
     m.visible = true; m.scale.setScalar(1); m.rotation.set(0, 0, 0);
     return m;
+  }
+  _enemyTpl(key, def) {
+    return getTemplate(`${key}|${def.model}|${def.color}|${def.size}`, () => safeBuild(() => M.buildEnemy(def.model, def.color, def.size), () => blob(def.color || 0xff00ff, def.size || 1)));
+  }
+  // Build merged geometries + instance buffers for a stage's roster up front so mid-fight spawns never hitch.
+  _warmEnemies(stage) {
+    try {
+      for (const id of new Set([...(stage.enemies || []), ...(stage.elites || [])])) { const def = D.ENEMIES?.[id]; if (def) this.enemyBatch.warm(this._enemyTpl(id, def), 64); }
+      this.renderer.compile(this.scene, this.camera);
+    } catch (err) { console.warn('[warm enemies]', err); }
   }
   spawnEnemy(id, x, z, opts = {}) {
     const def = opts.def || D.ENEMIES?.[id];
@@ -1084,6 +1094,7 @@ export class Game {
       behavior: opts.boss ? 'boss' : def.behavior || 'chase', t: rand(0, 3), cd: rand(1, 3), state: 0, alive: true,
       elite: !!opts.elite, boss: !!opts.boss, split: opts.split || 0, xp: (def.xp || 1) * (opts.xpMult || 1), touchCd: 0,
       burn: 0, burnDps: 0, freeze: 0, slow: 0, kx: 0, kz: 0, bar: null, hitPunch: 0, baseScale: sc,
+      tpl: opts.boss ? null : this._enemyTpl(key, def), phase: rand(0, 6.28), showBar: false,
     };
     if (e.boss) Object.assign(e, { phases: def.phases || 1, atkCd: 2.5, phase: 0, charge: null, spiral: null, name: def.name, title: def.title });
     this.enemies.push(e);
@@ -1165,6 +1176,7 @@ export class Game {
     const slowAll = r.timeSlow ? 0.3 : 1;
     const animate = this.enemies.length < 160 || S('quality', 'medium') !== 'low';
     const bars = !!S('healthBars', true);
+    this.enemyBatch.animate = animate;
     for (let i = 0; i < this.enemies.length; i++) {
       const e = this.enemies[i]; if (!e.alive) continue;
       e.t += dt;
@@ -1262,12 +1274,12 @@ export class Game {
       if (vx || vz) { const tr = Math.atan2(vx, vz); let dr = tr - e.mesh.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); e.mesh.rotation.y += dr * Math.min(1, dt * 8); }
       if (e.hitPunch > 0) { e.hitPunch -= dt; const k = 1 + Math.max(0, e.hitPunch) * 1.2; e.mesh.scale.set(e.baseScale * k, e.baseScale / k, e.baseScale * k); }
       else if (!e.fuse && e.mesh.scale.y !== e.baseScale) e.mesh.scale.setScalar(e.baseScale);
-      if (animate) { try { M.animate?.(e.mesh, e.t, true); } catch {} }
+      if (e.boss && animate) { try { M.animate?.(e.mesh, e.t, true); } catch {} }
       // contact damage
       e.touchCd -= dt;
       if (dist < e.r + 0.45 && e.touchCd <= 0 && e.freeze <= 0 && !e.emerge) { e.touchCd = 0.8; this.damagePlayer(e.dmg, e); }
       // health bar
-      if (bars && (e.hp < e.maxHp || e.elite) && !e.boss) this._updateBar(e); else if (e.bar) e.bar.visible = false;
+      e.showBar = bars && (e.hp < e.maxHp || e.elite) && !e.boss; // drawn instanced by EnemyBatcher
     }
     // compact dead
     if (this.enemies.some((e) => !e.alive)) this.enemies = this.enemies.filter((e) => e.alive);
@@ -1455,14 +1467,17 @@ export class Game {
     }
     const tier = value >= 50 ? 3 : value >= 10 ? 2 : value >= 3 ? 1 : 0;
     const key = 'xp' + tier;
-    const m = (this.pools[key] || []).pop() || safeBuild(() => M.buildXpGem(tier), () => new THREE.Mesh(GEO.orb, basicMat('#40a0ff')));
-    m.visible = true; m.position.set(x, 0, z); if (!m.parent) this.world.add(m);
-    this.pickups.push({ kind: 'xp', mesh: m, value, poolKey: key, magnet: false });
+    // drawn instanced by EnemyBatcher (q.tpl); q.mesh is a transform proxy
+    const m = (this.pools[key] || []).pop() || new THREE.Object3D();
+    m.visible = true; m.position.set(x, 0, z);
+    const tpl = getTemplate('pickup|' + key, () => safeBuild(() => M.buildXpGem(tier), () => new THREE.Mesh(GEO.orb, basicMat('#40a0ff'))));
+    this.pickups.push({ kind: 'xp', mesh: m, value, poolKey: key, magnet: false, tpl });
   }
   dropGold(x, z, value) {
-    const m = (this.pools.gold || []).pop() || safeBuild(() => M.buildGold(), () => new THREE.Mesh(GEO.orb, basicMat('#ffc020')));
-    m.visible = true; m.position.set(x, 0, z); if (!m.parent) this.world.add(m);
-    this.pickups.push({ kind: 'gold', mesh: m, value, poolKey: 'gold', magnet: false });
+    const m = (this.pools.gold || []).pop() || new THREE.Object3D();
+    m.visible = true; m.position.set(x, 0, z);
+    const tpl = getTemplate('pickup|gold', () => safeBuild(() => M.buildGold(), () => new THREE.Mesh(GEO.orb, basicMat('#ffc020'))));
+    this.pickups.push({ kind: 'gold', mesh: m, value, poolKey: 'gold', magnet: false, tpl });
   }
   dropChest(x, z) {
     const m = safeBuild(() => M.buildChest(), () => blob(0x8a5a2a, 0.8));
@@ -1493,7 +1508,7 @@ export class Game {
       if (q.kind === 'xp' || q.kind === 'gold') {
         if (!q.magnet && (d < range || (r.magnetAll > 0 && q.kind === 'xp' && d < 120))) q.magnet = true;
         if (q.magnet) { const sp = Math.max(14, s.moveSpeed * 2.5) * dt; m.position.x += dx / (d || 1) * Math.min(d, sp); m.position.z += dz / (d || 1) * Math.min(d, sp); }
-        try { M.animate?.(m, r.time, false); } catch {}
+        if (!q.tpl) { try { M.animate?.(m, r.time, false); } catch {} }
         if (d < 0.8) {
           if (q.kind === 'xp') this.gainXp(q.value); else { p.gold += q.value; Audio.play('gold'); }
           if (q.kind === 'xp') Audio.play('pickup');
@@ -1978,6 +1993,7 @@ export class Game {
     } catch (e) { console.error('[game update]', e); }
     this.updateCamera(this.paused ? 0 : dt);
     try { this.updateReticle(this.paused ? 0 : dt); } catch (e) { console.warn(e); }
+    try { this.enemyBatch.update(this.run ? this.enemies || [] : [], this.camera, true, this.run ? this.pickups : null, this.run?.time || 0); } catch (e) { console.warn('[enemyBatch]', e); }
     this.renderer.render(this.scene, this.camera);
   }
 }
