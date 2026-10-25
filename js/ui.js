@@ -2,7 +2,7 @@
 import * as Data from './data.js';
 import { Settings } from './settings.js';
 import { Accounts } from './accounts.js';
-import { CharPreview } from './preview.js';
+import { CharPreview, headshot } from './preview.js';
 
 const RARITY_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
 const STARTERS = ['ninja_mole', 'wizard_hamster', 'antknight'];
@@ -214,7 +214,8 @@ export class UI {
         const locked = !unlocked.has(c.id);
         const real = c; c = this._disp(c, locked);
         const card = el('div', 'portrait' + (locked ? ' locked' : '') + (real === sel ? ' selected' : ''));
-        card.innerHTML = `<div class="p-icon">${esc(c.icon || '🐾')}</div><div class="p-name">${esc(c.name)}</div>${locked ? '<div class="p-lock">🔒</div>' : ''}`;
+        const shot = headshot(real.model || real.id, { silhouette: !!(locked && real.secret) });
+        card.innerHTML = `${shot ? `<img class="p-head" src="${shot}" alt="">` : `<div class="p-icon">${esc(c.icon || '🐾')}</div>`}<div class="p-name">${esc(c.name)}</div>${locked ? '<div class="p-lock">🔒</div>' : ''}`;
         if (locked) this._bindTooltip(card, () => `<div class="tt-name orange">${esc(c.name)}</div><div class="red">Locked</div><div>${esc(c.unlockHint || 'Keep playing to unlock')}</div>`);
         card.onclick = () => { sel = real; render(); };
         card.ondblclick = () => { if (!locked) next(); };

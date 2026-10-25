@@ -545,3 +545,7 @@ body.reduced-motion *, body.reduced-motion *::before { animation: none !importan
 .cs-center { top: 78px; }
 .cs-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
 .portrait .p-name { font-size: 13px; overflow: hidden; }
+
+/* head portraits in character select */
+.portrait .p-head { width: 100%; margin: -6px 0 -4px; aspect-ratio: 1; object-fit: contain; image-rendering: auto; filter: drop-shadow(0 2px 0 #000); pointer-events: none; }
+.portrait.locked .p-head { filter: grayscale(1) brightness(.35) drop-shadow(0 2px 0 #000); }

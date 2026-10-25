@@ -117,3 +117,43 @@ export class CharPreview {
     this.renderer.forceContextLoss?.();
   }
 }
+
+// ---------- head portraits ----------
+// One shared offscreen renderer; each character's head is rendered once and cached as a data URL.
+let shotR = null, shotScene = null, shotCam = null;
+const shotCache = new Map();
+export function headshot(key, { silhouette = false } = {}) {
+  const ck = key + (silhouette ? ':s' : '');
+  if (shotCache.has(ck)) return shotCache.get(ck);
+  let url = '';
+  try {
+    if (!shotR) {
+      shotR = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+      shotR.setSize(128, 128, false);
+      shotR.setClearColor(0x000000, 0);
+      shotScene = new THREE.Scene();
+      shotScene.add(new THREE.HemisphereLight(0xfff4e0, 0x3a2a1a, 1.1));
+      const k = new THREE.DirectionalLight(0xffffff, 1.2); k.position.set(1.5, 2.5, 3); shotScene.add(k);
+      const rim = new THREE.PointLight(0xff8a2a, 1.6, 10); rim.position.set(-2, 2, -1); shotScene.add(rim);
+      shotCam = new THREE.PerspectiveCamera(30, 1, 0.05, 50);
+    }
+    const m = buildCharacter(key);
+    const box = new THREE.Box3().setFromObject(m);
+    const h = Math.max(0.01, box.max.y - box.min.y);
+    const s = 1.8 / h;
+    m.scale.multiplyScalar(s);
+    m.position.y = -box.min.y * s;
+    m.rotation.y = 0.35;
+    if (silhouette) { const blk = new THREE.MeshBasicMaterial({ color: 0x050505 }); m.traverse((o) => { if (o.isMesh) o.material = blk; }); }
+    shotScene.add(m);
+    // frame the top ~40% of the model (the head)
+    const headY = 1.8 * 0.78, span = 0.95;
+    shotCam.position.set(0.25, headY + 0.1, span / (2 * Math.tan((shotCam.fov * Math.PI) / 360)) + 0.4);
+    shotCam.lookAt(0, headY + 0.05, 0);
+    shotR.render(shotScene, shotCam);
+    url = shotR.domElement.toDataURL('image/png');
+    shotScene.remove(m); // models.js shares cached geo/materials: never dispose
+  } catch (e) { console.warn('headshot failed', key, e); }
+  shotCache.set(ck, url);
+  return url;
+}
